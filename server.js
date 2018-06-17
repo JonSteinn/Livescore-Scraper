@@ -1,5 +1,6 @@
 const Nightmare = require('nightmare')
 const express = require('express');
+var Semaphore = require('semaphore')
 
 const data = {
     'england': {
@@ -7,94 +8,207 @@ const data = {
             'path': 'http://www.livescore.com/soccer/england/premier-league/',
             'standing': [],
             'callback': (result) => {
-                data['england'][1]['standing'] = result;
-            }
+                writeData(data['england'][1], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         },
         2: {
             'path': 'http://www.livescore.com/soccer/england/championship/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['england'][2]['standing'] = result;
-            }
+                writeData(data['england'][2], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         },
         3: {
             'path': 'http://www.livescore.com/soccer/england/league-1/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['england'][3]['standing'] = result;
-            }
+                writeData(data['england'][3], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         },
         4: {
             'path': 'http://www.livescore.com/soccer/england/league-2/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['england'][4]['standing'] = result;
-            }
+                writeData(data['england'][4], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         }
     },
     'spain': {
         1: {
             'path': 'http://www.livescore.com/soccer/spain/primera-division/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['spain'][1]['standing'] = result;
-            }
+                writeData(data['spain'][1], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         },
         2: {
             'path': 'http://www.livescore.com/soccer/spain/segunda-division/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['spain'][2]['standing'] = result;
-            }
+                writeData(data['spain'][2], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         }
     },
     'italy': {
         1: {
             'path': 'http://www.livescore.com/soccer/italy/serie-a/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['italy'][1]['standing'] = result;
-            }
+                writeData(data['italy'][1], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         },
         2: {
             'path': 'http://www.livescore.com/soccer/italy/serie-b/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['italy'][2]['standing'] = result;
-            }
+                writeData(data['italy'][2], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         }
     },
     'germany': {
         1: {
             'path': 'http://www.livescore.com/soccer/germany/bundesliga/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['germany'][1]['standing'] = result;
-            }
+                writeData(data['germany'][1], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         },
         2: {
             'path': 'http://www.livescore.com/soccer/germany/2-bundesliga/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['germany'][2]['standing'] = result;
-            }
+                writeData(data['germany'][2], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         }
     },
     'france': {
         1: {
             'path': 'http://www.livescore.com/soccer/france/ligue-1/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['france'][1]['standing'] = result;
-            }
+                writeData(data['france'][1], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         },
         2: {
             'path': 'http://www.livescore.com/soccer/france/ligue-2/',
             'standing': [],
+            'temp_standing': [],
             'callback': (result) => {
-                data['france'][2]['standing'] = result;
-            }
+                writeData(data['france'][2], result);
+            },
+            'readCount': 0,
+            'writeCount': 0,
+            'rMutex': Semaphore(1),
+            'wMutex': Semaphore(1),
+            'readTry': Semaphore(1),
+            'resource': Semaphore(1)
         }
+    }
+}
+
+function writeData(obj, result) {
+    obj.wMutex.take(1, () => {
+        obj.writeCount++;
+        if (obj.writeCount === 1) {
+            obj.readTry.take(1, step2);
+        } else {
+            step2();
+        }
+    })
+    function step2() {
+        obj.wMutex.leave();
+        obj.resource.take(1, () => {
+            obj['standing'] = result;
+            obj.resource.leave();
+            obj.wMutex.take(1, () => {
+                obj.writeCount--;
+                if (obj.writeCount === 0) {
+                    obj.readTry.leave();
+                    step3();
+                } else {
+                    step3();
+                }
+            })
+        });
+    }
+    function step3() {
+        obj.wMutex.leave();
     }
 }
 
@@ -137,7 +251,6 @@ function set_data(callback, path) {
 }
 
 function getAll() {
-    console.log('fetching');
     for (let k in data) {
         for (let x in data[k]) {
             set_data(data[k][x].callback, data[k][x].path);
@@ -145,17 +258,14 @@ function getAll() {
     }
 }
 
-function _write() {
-    
-}
 
 getAll();
 setInterval(() => {
     getAll();
 }, 60000);
 
+const app = express();
 
-const app = express()
 app.get('/:nation/:league', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     nation = req.params['nation']
@@ -165,8 +275,35 @@ app.get('/:nation/:league', (req, res) => {
         res.send(JSON.stringify('404 - Not Found'))
     } else {
         res.statusCode = 200;
-        res.send(JSON.stringify(data[nation][league].standing));
+
+        data[nation][league].readTry.take(1, () => {
+            data[nation][league].rMutex.take(1, () => {
+                data[nation][league].readCount++;
+                if (data[nation][league].readCount === 1) {
+                    data[nation][league].resource.take(1, step2);
+                } else {
+                    step2();
+                }
+            })
+        })
+        function step2() {
+            data[nation][league].rMutex.leave();
+            data[nation][league].readTry.leave();
+            res.send(JSON.stringify(data[nation][league].standing));
+            data[nation][league].rMutex.take(1, () => {
+                data[nation][league].readCount--;
+                if (data[nation][league].readCount === 0) {
+                    data[nation][league].resource.leave();
+                    step3();
+                } else {
+                    step3();
+                }
+            })
+        }
+        function step3() {
+            data[nation][league].rMutex.leave();
+        }     
     }
 });
 
-app.listen(5050, () => console.log('Running on http://localhost:5050'))
+app.listen(5050, () => console.log('Running on http://localhost:5050'));
