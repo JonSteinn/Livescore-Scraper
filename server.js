@@ -7,13 +7,13 @@
  * readers but since we are the only writer, which
  * only happens every 60 seconds, that is fine.
  * Each league has its own semaphore so we are not
- * locking people reading one leaegue if we are
+ * locking people reading one league if we are
  * only updating another.
  */
 
-const Nightmare = require('nightmare')
+const Nightmare = require('nightmare');
 const express = require('express');
-const Semaphore = require('semaphore')
+const Semaphore = require('semaphore');
 
 /**
  * In memory data for each league.
@@ -24,7 +24,7 @@ const data = {
             'path': 'http://www.livescore.com/soccer/england/premier-league/',
             'standing': [],
             'callback': (result) => {
-                writeData(data['england'][1], result);
+                writeData(data.england[1], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -38,7 +38,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['england'][2], result);
+                writeData(data.england[2], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -52,7 +52,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['england'][3], result);
+                writeData(data.england[3], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -66,7 +66,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['england'][4], result);
+                writeData(data.england[4], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -82,7 +82,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['spain'][1], result);
+                writeData(data.spain[1], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -96,7 +96,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['spain'][2], result);
+                writeData(data.spain[2], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -112,7 +112,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['italy'][1], result);
+                writeData(data.italy[1], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -126,7 +126,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['italy'][2], result);
+                writeData(data.italy[2], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -142,7 +142,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['germany'][1], result);
+                writeData(data.germany[1], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -156,7 +156,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['germany'][2], result);
+                writeData(data.germany[2], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -172,7 +172,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['france'][1], result);
+                writeData(data.france[1], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -186,7 +186,7 @@ const data = {
             'standing': [],
             'temp_standing': [],
             'callback': (result) => {
-                writeData(data['france'][2], result);
+                writeData(data.france[2], result);
             },
             'readCount': 0,
             'writeCount': 0,
@@ -196,7 +196,7 @@ const data = {
             'resource': Semaphore(1)
         }
     }
-}
+};
 
 /**
  * Write the updated tables to our data.
@@ -215,7 +215,8 @@ function writeData(obj, result) {
         } else {
             step2();
         }
-    })
+    });
+
     function step2() {
         obj.wMutex.leave();
         // End writer mutex
@@ -223,7 +224,7 @@ function writeData(obj, result) {
         obj.resource.take(1, () => {
 
             // Start critical section
-            obj['standing'] = result;
+            obj.standing = result;
             // End critical section
 
             obj.resource.leave();
@@ -237,12 +238,16 @@ function writeData(obj, result) {
                 } else {
                     step3();
                 }
-            })
+            });
         });
     }
+
     function step3() {
         obj.wMutex.leave();
         // End writer mutex
+
+        // End writer
+
     }
 }
 
@@ -259,10 +264,10 @@ function set_data(callback, path) {
         .evaluate(() => {
             const container = document.querySelector('div.ltable:nth-child(3)');
             const children = container.children;
-            const lis = []
+            const lis = [];
             for (let i = 0; i < children.length; i++) {
                 const child = children[i];
-                const team = child.querySelector('div[data-type="name"]')
+                const team = child.querySelector('div[data-type="name"]');
                 if (!team) {
                     continue;
                 }
@@ -276,7 +281,7 @@ function set_data(callback, path) {
                     'goals_received': parseInt(child.querySelector('div[data-type="goals-received"]').innerHTML),
                     'goal_difference': parseInt(child.querySelector('div[data-type="goal-difference"]').innerHTML),
                     'points': parseInt(child.querySelector('div[data-type="points"]').innerHTML)
-                })
+                });
             }
             return lis;
         })
@@ -301,10 +306,21 @@ function getAll() {
     }
 }
 
-/*
- * Start by getting all the data from livescore
- * and then fetch it every 60 seconds.
+/**
+ * Construct a json object of supported leagues from data object.
  */
+function supportedLeagues() {
+    const supportedLeagues = {};
+    for (let nation in data) {
+        supportedLeagues[nation] = [];
+        for (let league in data[nation]) {
+            supportedLeagues[nation].push(league);
+        }
+    }
+    return supportedLeagues;
+}
+
+// Start by getting all the data from livescore.
 getAll();
 setInterval(() => {
     getAll();
@@ -312,6 +328,26 @@ setInterval(() => {
 
 // Create a Express app
 const app = express();
+
+/**
+ * GET /
+ * 
+ * Home page with anchors to available routes.
+ */
+app.get('/', (req, res) => {
+    html = '<!DOCTYPE html><html><body><h1>Available leagues</h1><ul>';
+    const support = supportedLeagues();
+    for (let nation in support) {
+        html += '<li>' + nation + '</li><ul>';
+        for (let league in support[nation]) {
+            url = '/' + nation + '/' + league;
+            html += '<li><a href=' + url + '>GET ' + url + '</a></li>';
+        }
+        html += '</ul>';
+    }  
+    html += '</ul></body></html>';
+    res.send(html);
+});
 
 /**
  * GET /:nation/:league
@@ -323,20 +359,12 @@ const app = express();
 app.get('/:nation/:league', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
 
-    nation = req.params['nation'].toLowerCase();
-    league = req.params['league'].toLowerCase();
+    nation = req.params.nation.toLowerCase();
+    league = req.params.league.toLowerCase();
 
     if (!nation || !league || !data[nation] || !data[nation][league]) {
         res.statusCode = 404;
-        // Construct a json object of supported leagues from data object
-        const supportedLeagues = {};
-        for (nation in data) {
-            supportedLeagues[nation] = [];
-            for (league in data[nation]) {
-                supportedLeagues[nation].push(league);
-            }
-        }
-        res.send(JSON.stringify({'supported leagues': supportedLeagues}));
+        res.send(JSON.stringify({'supported leagues': supportedLeagues()}));
     } else {
         res.statusCode = 200;
 
@@ -350,8 +378,9 @@ app.get('/:nation/:league', (req, res) => {
                 } else {
                     step2();
                 }
-            })
-        })
+            });
+        });
+
         function step2() {
             // End reading mutex
             data[nation][league].rMutex.leave();
@@ -370,14 +399,15 @@ app.get('/:nation/:league', (req, res) => {
                 } else {
                     step3();
                 }
-            })
+            });
         }
+
         function step3() {
             // End reading mutex
             data[nation][league].rMutex.leave();
 
             // End reader
-        }     
+        }
     }
 });
 
