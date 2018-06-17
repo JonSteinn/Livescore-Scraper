@@ -8,7 +8,7 @@ The following command
 ```sh
 curl --request GET --url http://localhost:5050/england/2'
 ```
-gives the following data
+at 17th june 2018, 18:00ish (Icelandic timezone) gave the following data
 ```json
 [
     {
