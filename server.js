@@ -1,7 +1,23 @@
+/**
+ * An api that returns live soccer league standings.
+ * It does so by scraping livescore every 60 seconds.
+ * To avoid concurrent access to our data by the
+ * update every 60 sec and any client, we use
+ * semaphores. The approach would technically starve
+ * readers but since we are the only writer, which
+ * only happens every 60 seconds, that is fine.
+ * Each league has its own semaphore so we are not
+ * locking people reading one leaegue if we are
+ * only updating another.
+ */
+
 const Nightmare = require('nightmare')
 const express = require('express');
-var Semaphore = require('semaphore')
+const Semaphore = require('semaphore')
 
+/**
+ * In memory data for each league.
+ */
 const data = {
     'england': {
         1: {
@@ -182,7 +198,16 @@ const data = {
     }
 }
 
+/**
+ * Write the updated tables to our data.
+ * 
+ * @param {object} obj The league data
+ * @param {object} result The scraping results
+ */
 function writeData(obj, result) {
+    // Start writer
+
+    // Start writer mutex
     obj.wMutex.take(1, () => {
         obj.writeCount++;
         if (obj.writeCount === 1) {
@@ -193,9 +218,17 @@ function writeData(obj, result) {
     })
     function step2() {
         obj.wMutex.leave();
+        // End writer mutex
+
         obj.resource.take(1, () => {
+
+            // Start critical section
             obj['standing'] = result;
+            // End critical section
+
             obj.resource.leave();
+
+            // Start writer mutex
             obj.wMutex.take(1, () => {
                 obj.writeCount--;
                 if (obj.writeCount === 0) {
@@ -209,9 +242,16 @@ function writeData(obj, result) {
     }
     function step3() {
         obj.wMutex.leave();
+        // End writer mutex
     }
 }
 
+/**
+ * Scrapes tables from Livescore.
+ * 
+ * @param {function} callback What is called with the result when finsihed
+ * @param {string} path The uri of the site to request
+ */
 function set_data(callback, path) {
     Nightmare({ show: false })
         .goto(path)
@@ -250,6 +290,9 @@ function set_data(callback, path) {
     );
 }
 
+/**
+ * Fetches all the leagues asynchronously.
+ */
 function getAll() {
     for (let k in data) {
         for (let x in data[k]) {
@@ -258,25 +301,48 @@ function getAll() {
     }
 }
 
-
+/*
+ * Start by getting all the data from livescore
+ * and then fetch it every 60 seconds.
+ */
 getAll();
 setInterval(() => {
     getAll();
 }, 60000);
 
+// Create a Express app
 const app = express();
 
+/**
+ * GET /:nation/:league
+ * 
+ * Returns a json array, ordered by the league standing
+ * with every team as an object in the array and status
+ * code 200 if the league is supported, 404 otherwise.
+ */
 app.get('/:nation/:league', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    nation = req.params['nation']
-    league = req.params['league']
+
+    nation = req.params['nation'].toLowerCase();
+    league = req.params['league'].toLowerCase();
+
     if (!nation || !league || !data[nation] || !data[nation][league]) {
         res.statusCode = 404;
-        res.send(JSON.stringify('404 - Not Found'))
+        // Construct a json object of supported leagues from data object
+        const supportedLeagues = {};
+        for (nation in data) {
+            supportedLeagues[nation] = [];
+            for (league in data[nation]) {
+                supportedLeagues[nation].push(league);
+            }
+        }
+        res.send(JSON.stringify({'supported leagues': supportedLeagues}));
     } else {
         res.statusCode = 200;
 
+        // Start reader
         data[nation][league].readTry.take(1, () => {
+            // Start reading mutex
             data[nation][league].rMutex.take(1, () => {
                 data[nation][league].readCount++;
                 if (data[nation][league].readCount === 1) {
@@ -287,9 +353,15 @@ app.get('/:nation/:league', (req, res) => {
             })
         })
         function step2() {
+            // End reading mutex
             data[nation][league].rMutex.leave();
             data[nation][league].readTry.leave();
+            
+            // Start critical section
             res.send(JSON.stringify(data[nation][league].standing));
+            // End critical section
+
+            // Start reading mutex
             data[nation][league].rMutex.take(1, () => {
                 data[nation][league].readCount--;
                 if (data[nation][league].readCount === 0) {
@@ -301,9 +373,13 @@ app.get('/:nation/:league', (req, res) => {
             })
         }
         function step3() {
+            // End reading mutex
             data[nation][league].rMutex.leave();
+
+            // End reader
         }     
     }
 });
 
+// Listen on port 5050
 app.listen(5050, () => console.log('Running on http://localhost:5050'));
